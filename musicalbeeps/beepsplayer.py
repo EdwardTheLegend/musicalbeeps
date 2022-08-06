@@ -99,13 +99,15 @@ class Player:
         self.__wait_for_prev_sound()
         self._play_obj = sa.play_buffer(audio, 1, 2, self.rate)
 
-    def generate_note_waveform(self, duration):
+    def generate_note_waveform(
+        self, duration, wave_variation_mutlipliers=np.linspace(-10, 2, num=5)
+    ):
         t = np.linspace(0, duration, int(duration * self.rate), False)
 
         # generate sine wave at different fractions of the frequency
-        waves = np.array(np.sin(2 * np.pi * self.freq * t))
-        for i in range(0, 20, 5):
-            waves = np.vstack([waves, np.sin(2 * np.pi * self.freq * t * (i / 10))])
+        waves = np.zeros(len(t))
+        for i in wave_variation_mutlipliers:
+            waves = np.vstack([waves, np.sin(2 * np.pi * self.freq * t * i)])
 
         # average the waves to get the final waveform
         audio = np.mean(waves, axis=0)
@@ -151,19 +153,29 @@ class Player:
                 self.__print_played_note(note, duration)
                 self._destructor_sleep = duration
 
-    def play_tune(self, tune: Union[str, list]):
+    def play_tune(
+        self,
+        tune: Union[str, list],
+        wave_variation_mutlipliers=np.linspace(-10, 2, num=5),
+    ):
         if isinstance(tune, str):
             with open(tune, "r") as f:
-                audio = self.generate_tune_waveform(f)
+                audio = self.generate_tune_waveform(
+                    f, wave_variation_mutlipliers=wave_variation_mutlipliers
+                )
         elif isinstance(tune, list):
-            audio = self.generate_tune_waveform(tune)
+            audio = self.generate_tune_waveform(
+                tune, wave_variation_mutlipliers=wave_variation_mutlipliers
+            )
         else:
             raise TypeError("tune must be a string or list")
 
         # play audio
         self.__write_stream(audio=audio)
 
-    def generate_tune_waveform(self, lines):
+    def generate_tune_waveform(
+        self, lines, wave_variation_mutlipliers=np.linspace(-10, 2, num=5)
+    ):
         # create waveform for each note in the tune
         notes_waves = []
         for line in lines:
@@ -181,7 +193,12 @@ class Player:
 
                 self.__calc_frequency(note)
                 if self._valid_note:
-                    notes_waves.append(self.generate_note_waveform(duration))
+                    notes_waves.append(
+                        self.generate_note_waveform(
+                            duration,
+                            wave_variation_mutlipliers=wave_variation_mutlipliers,
+                        )
+                    )
 
         # combine all notes together
         audio = np.concatenate(notes_waves)
@@ -205,7 +222,6 @@ def play_tune(*args, **kwargs):
 
 if __name__ == "__main__":
     # play test tune
-    play_tune("music_scores/fur_elise.txt")
+    # play_tune("music_scores/fur_elise.txt")
 
-    # play note
-    # play_note("C4", 0.5)
+    play_tune(["E4", "D4"])
