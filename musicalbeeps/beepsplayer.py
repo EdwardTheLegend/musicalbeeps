@@ -3,8 +3,11 @@
 import os
 import sys
 import time
+from typing import Union
 import numpy as np
 import simpleaudio as sa
+
+from musicalbeeps.script import player_loop
 
 
 class Player:
@@ -134,6 +137,15 @@ class Player:
                 self.__print_played_note(note, duration)
                 self._destructor_sleep = duration
 
+    def play_tune(self, tune: Union[str, list]):
+        if isinstance(tune, str):
+            with open(tune, "r") as f:
+                player_loop(self, f)
+        elif isinstance(tune, list):
+            player_loop(self, tune)
+        else:
+            raise TypeError("tune must be a string or list")
+
     def __del__(self):
         time.sleep(self._destructor_sleep)
 
@@ -143,3 +155,7 @@ default_player = Player()
 
 def play_note(*args, **kwargs):
     default_player.play_note(*args, **kwargs)
+
+
+def play_tune(*args, **kwargs):
+    default_player.play_tune(*args, **kwargs)

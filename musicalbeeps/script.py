@@ -7,9 +7,10 @@ import musicalbeeps
 
 
 def setup_argparse():
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
-                                    description='Play sound beeps corresponding to musical notes.',
-                                    epilog='''\
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="Play sound beeps corresponding to musical notes.",
+        epilog="""\
 
 how to play notes:
     Notes are read from a file passed as argument, or directly from the
@@ -25,51 +26,53 @@ note format:
 
 pause:
     You can pause the player by replacing the note by the 'pause' word.
-    For exemple, 'pause:5' will pause the player for 5 seconds.''')
-    parser.add_argument("file",
-                        nargs="?",
-                        help="a file containing musical notes")
-    parser.add_argument("--silent",
-                        help="disable player output",
-                        action='store_true')
-    parser.add_argument("--volume",
-                        help="volume between 0 and 1 (default=0.3)",
-                        type=float,
-                        default=0.3)
+    For example, 'pause:5' will pause the player for 5 seconds.""",
+    )
+    parser.add_argument("file", nargs="?", help="a file containing musical notes")
+    parser.add_argument(
+        "--silent",
+        help="disable player output",
+        action="store_true",
+        dest="mute_output",
+    )
+    parser.add_argument(
+        "--volume", help="volume between 0 and 1 (default=0.3)", type=float, default=0.3
+    )
     args = parser.parse_args()
     if args.file:
-        input_file = open(args.file, 'r')
+        input_file = open(args.file, "r")
     else:
         input_file = sys.stdin
     return args, input_file
 
+
 def player_loop(args, input_file):
-    notes_player = musicalbeeps.Player(args.volume, args.silent)
+    notes_player = musicalbeeps.Player(args.volume, args.mute_output)
 
     for line in input_file:
         valid_duration = True
         line = line.rstrip()
         if len(line) > 0:
             try:
-                note, duration_str = line.split(':')
+                note, duration_str = line.split(":")
             except:
-                note, duration_str = line, '.5'
+                note, duration_str = line, ".5"
             try:
                 duration = float(duration_str)
             except:
                 valid_duration = False
-                print("Error: invalid duration: '"
-                                        + duration_str
-                                        + "'",
-                                        file=sys.stderr)
+                print(
+                    "Error: invalid duration: '" + duration_str + "'", file=sys.stderr
+                )
             if valid_duration:
                 notes_player.play_note(note, duration)
+
 
 def main():
     try:
         args, input_file = setup_argparse()
         player_loop(args, input_file)
-        if not args.silent:
+        if not args.mute_output:
             print("Done")
         if input_file is not sys.stdin:
             input_file.close
@@ -77,6 +80,7 @@ def main():
         pass
     except Exception as e:
         print(e, file=sys.stderr)
+
 
 if __name__ == "__main__":
     main()
