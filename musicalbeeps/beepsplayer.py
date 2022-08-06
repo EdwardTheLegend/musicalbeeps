@@ -92,9 +92,24 @@ class Player:
             while self._play_obj.is_playing():
                 pass
 
-    def __write_stream(self, duration: float):
+    def __write_stream(self, duration: float = 0.5, audio=None):
+        if audio is None:
+            audio = self.generate_note_waveform(duration)
+
+        self.__wait_for_prev_sound()
+        self._play_obj = sa.play_buffer(audio, 1, 2, self.rate)
+
+    def generate_note_waveform(self, duration):
         t = np.linspace(0, duration, int(duration * self.rate), False)
-        audio = np.sin(self.freq * t * 2 * np.pi)
+
+        # generate sine wave at different fractions of the frequency
+        waves = np.array(np.sin(2 * np.pi * self.freq * t))
+        for i in range(0, 20, 5):
+            waves = np.vstack([waves, np.sin(2 * np.pi * self.freq * t * (i / 10))])
+
+        # average the waves to get the final waveform
+        audio = np.mean(waves, axis=0)
+
         audio *= 32767 / np.max(np.abs(audio))
         audio *= self.volume
 
@@ -104,8 +119,7 @@ class Player:
 
         audio = audio.astype(np.int16)
 
-        self.__wait_for_prev_sound()
-        self._play_obj = sa.play_buffer(audio, 1, 2, self.rate)
+        return audio
 
     def __print_played_note(self, note: str, duration: float):
         if self.mute_output or not self._valid_note:
@@ -140,11 +154,39 @@ class Player:
     def play_tune(self, tune: Union[str, list]):
         if isinstance(tune, str):
             with open(tune, "r") as f:
-                player_loop(self, f)
+                audio = self.generate_tune_waveform(f)
         elif isinstance(tune, list):
-            player_loop(self, tune)
+            audio = self.generate_tune_waveform(tune)
         else:
             raise TypeError("tune must be a string or list")
+
+        # play audio
+        self.__write_stream(audio=audio)
+
+    def generate_tune_waveform(self, lines):
+        # create waveform for each note in the tune
+        notes_waves = []
+        for line in lines:
+            line = line.strip()
+            if len(line) > 0:
+                try:
+                    note, duration = line.split(":")
+                except:
+                    note, duration = line, 0.5
+
+                try:
+                    duration = float(duration)
+                except:
+                    duration = 0.5
+
+                self.__calc_frequency(note)
+                if self._valid_note:
+                    notes_waves.append(self.generate_note_waveform(duration))
+
+        # combine all notes together
+        audio = np.concatenate(notes_waves)
+
+        return audio
 
     def __del__(self):
         time.sleep(self._destructor_sleep)
@@ -159,3 +201,11 @@ def play_note(*args, **kwargs):
 
 def play_tune(*args, **kwargs):
     default_player.play_tune(*args, **kwargs)
+
+
+if __name__ == "__main__":
+    # play test tune
+    play_tune("music_scores/fur_elise.txt")
+
+    # play note
+    # play_note("C4", 0.5)
