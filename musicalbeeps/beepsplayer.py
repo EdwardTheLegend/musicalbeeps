@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 
-import os
+
 import sys
 import time
 from typing import Union
+
 import numpy as np
 import simpleaudio as sa
-
-from musicalbeeps.script import player_loop
 
 
 class Player:

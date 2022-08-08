@@ -1,5 +1,6 @@
 import pathlib
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 HERE = pathlib.Path(__file__).parent
 
@@ -22,7 +23,7 @@ setup(
         "Environment :: Console",
         "Intended Audience :: End Users/Desktop",
         "Topic :: Multimedia :: Sound/Audio",
-        "Topic :: Multimedia :: Sound/Audio :: Players"
+        "Topic :: Multimedia :: Sound/Audio :: Players",
     ],
     packages=find_packages(),
     install_requires=["numpy", "simpleaudio"],
